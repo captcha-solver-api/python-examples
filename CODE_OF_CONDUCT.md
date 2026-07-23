@@ -30,7 +30,7 @@ Examples of unacceptable behavior by participants include:
 
 This Code of Conduct applies within all project spaces, both public and private, when an individual is representing the project or its community in any way. 
 
-Please note that the actual use of the API and services is strictly governed by our [Terms of Service](https://captcha-solver.com/). By participating in this repository or using our services, you agree to not use the provided tools to bypass protections of systems you do not own or do not have explicit permission to test.
+Please note that the actual use of the API and services is strictly governed by our [Terms of Service](https://captcha-solver.com/en/terms-of-service). By participating in this repository or using our services, you agree to not use the provided tools to bypass protections of systems you do not own or do not have explicit permission to test.
 
 ## Our Responsibilities
 
@@ -40,7 +40,7 @@ Community leaders have the right and responsibility to remove, edit, or reject c
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project team at **info@solvecaptcha.com**. 
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported by contacting the project team at **support@captcha-solver.com**. 
 
 All complaints will be reviewed and investigated and will result in a response that is deemed necessary and appropriate to the circumstances. The project team is obligated to maintain confidentiality with regard to the reporter of an incident.
 
