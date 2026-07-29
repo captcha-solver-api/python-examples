@@ -86,7 +86,7 @@ while True:
 ---
 ## Usage Examples
 ### reCAPTCHA v2
-Uses `RecaptchaV2TaskProxyless`. Add `isInvisible`, `userAgent`, or `cookies` if your target page requires them. Use `RecaptchaV2Task` for your own proxy.
+Uses `RecaptchaV2TaskProxyless`. Add `isInvisible`, `userAgent`, or `cookies` if your target page requires them. Use `RecaptchaV2Task` for your own proxy. See the official docs for reCAPTCHA v2 parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#recaptcha-v2).
 ```python
 response = requests.post("https://api.captcha-solver.com/createTask", json={
     "clientKey": "YOUR_API_KEY",
@@ -100,7 +100,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
 task_id = response.json().get("taskId")
 ```
 ### reCAPTCHA v2 Enterprise
-Uses `RecaptchaV2EnterpriseTaskProxyless`. Pass `enterprisePayload` if the site uses `grecaptcha.enterprise.render` with extra parameters. Use `RecaptchaV2EnterpriseTask` for your own proxy.
+Uses `RecaptchaV2EnterpriseTaskProxyless`. Pass `enterprisePayload` if the site uses `grecaptcha.enterprise.render` with extra parameters. Use `RecaptchaV2EnterpriseTask` for your own proxy. See the official docs for reCAPTCHA v2 Enterprise parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#recaptcha-v2-enterprise).
 ```python
 response = requests.post("https://api.captcha-solver.com/createTask", json={
     "clientKey": "YOUR_API_KEY",
@@ -114,7 +114,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
 task_id = response.json().get("taskId")
 ```
 ### reCAPTCHA v3
-Uses `RecaptchaV3TaskProxyless`. Set `minScore` to the required threshold. Pass `pageAction` if known. Set `isEnterprise` to `true` for reCAPTCHA v3 Enterprise.
+Uses `RecaptchaV3TaskProxyless`. Set `minScore` to the required threshold. Pass `pageAction` if known. Set `isEnterprise` to `true` for reCAPTCHA v3 Enterprise. See the official docs for reCAPTCHA v3 parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#recaptcha-v3).
 ```python
 response = requests.post("https://api.captcha-solver.com/createTask", json={
     "clientKey": "YOUR_API_KEY",
@@ -129,7 +129,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
 task_id = response.json().get("taskId")
 ```
 ### Cloudflare Turnstile
-Uses `TurnstileTaskProxyless`. Pass `action`, `data` (cData), or `pageData` if the site uses them. Always pass `userAgent` for complex pages like Cloudflare Challenge. Use `TurnstileTask` for your own proxy.
+Uses `TurnstileTaskProxyless`. Pass `action`, `data` (cData), or `pageData` if the site uses them. Always pass `userAgent` for complex pages like Cloudflare Challenge. Use `TurnstileTask` for your own proxy. See the official docs for Cloudflare Turnstile parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#cloudflare-turnstile).
 ```python
 response = requests.post("https://api.captcha-solver.com/createTask", json={
     "clientKey": "YOUR_API_KEY",
@@ -142,7 +142,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
 task_id = response.json().get("taskId")
 ```
 ### Yandex SmartCaptcha
-Token-based solving uses `YandexSmartCaptchaTaskProxyless` or `YandexSmartCaptchaTask`. Image-based solving uses `CoordinatesTask` with `imgType` set to `smart_captcha` or `pazl_smart_captcha`. See the Coordinates section for image examples.
+Token-based solving uses `YandexSmartCaptchaTaskProxyless` or `YandexSmartCaptchaTask`. Image-based solving uses `CoordinatesTask` with `imgType` set to `smart_captcha` or `pazl_smart_captcha`. See the Coordinates section for image examples. See the official docs for Yandex SmartCaptcha parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#yandex-smartcaptcha).
 ```python
 response = requests.post("https://api.captcha-solver.com/createTask", json={
     "clientKey": "YOUR_API_KEY",
@@ -155,7 +155,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
 task_id = response.json().get("taskId")
 ```
 ### Image to Text
-Uses `ImageToTextTask`. Set `numeric`, `minLength`, `maxLength`, or `case` to improve accuracy. Add `comment` for worker instructions.
+Uses `ImageToTextTask`. Set `numeric`, `minLength`, `maxLength`, or `case` to improve accuracy. Add `comment` for worker instructions. See the official docs for Image to Text parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#image-to-text).
 ```python
 import base64
 with open("captcha.png", "rb") as f:
@@ -173,7 +173,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
 task_id = response.json().get("taskId")
 ```
 ### Coordinates
-Uses `CoordinatesTask`. Works for click-based captchas and Yandex SmartCaptcha image challenges. Set `imgType` to `smart_captcha` or `pazl_smart_captcha` for Yandex. Always pass `imgInstructions` for `smart_captcha`.
+Uses `CoordinatesTask`. Works for click-based captchas and Yandex SmartCaptcha image challenges. Set `imgType` to `smart_captcha` or `pazl_smart_captcha` for Yandex. Always pass `imgInstructions` for `smart_captcha`. See the official docs for Coordinates parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#coordinates).
 ```python
 import base64
 with open("captcha.png", "rb") as f:
@@ -189,7 +189,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
 task_id = response.json().get("taskId")
 ```
 ### GeeTest v3
-Uses `GeeTestTaskProxyless` or `GeeTestTask`. Requires fresh `gt` and `challenge` values from the target page on each request. Version defaults to 3.
+Uses `GeeTestTaskProxyless` or `GeeTestTask`. Requires fresh `gt` and `challenge` values from the target page on each request. Version defaults to 3. See the official docs for GeeTest v3 parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#geetest-v3).
 ```python
 response = requests.post("https://api.captcha-solver.com/createTask", json={
     "clientKey": "YOUR_API_KEY",
@@ -203,7 +203,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
 task_id = response.json().get("taskId")
 ```
 ### GeeTest v4
-Uses `GeeTestTaskProxyless` or `GeeTestTask`. Set `version` to 4. Pass `initParameters` with `captcha_id` from the target page.
+Uses `GeeTestTaskProxyless` or `GeeTestTask`. Set `version` to 4. Pass `initParameters` with `captcha_id` from the target page. See the official docs for GeeTest v4 parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#geetest-v4).
 ```python
 response = requests.post("https://api.captcha-solver.com/createTask", json={
     "clientKey": "YOUR_API_KEY",
@@ -217,7 +217,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
 task_id = response.json().get("taskId")
 ```
 ### Tencent
-Uses `TencentTaskProxyless` or `TencentTask`. Requires `appId` from the page source. Pass `captchaScript` if the site uses a non-default script URL.
+Uses `TencentTaskProxyless` or `TencentTask`. Requires `appId` from the page source. Pass `captchaScript` if the site uses a non-default script URL. See the official docs for Tencent parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#tencent).
 ```python
 response = requests.post("https://api.captcha-solver.com/createTask", json={
     "clientKey": "YOUR_API_KEY",
