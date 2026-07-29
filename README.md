@@ -286,6 +286,7 @@ if data.get("errorId") != 0:
 ## API Documentation
 
 See the [official service documentation](https://captcha-solver.com/en/docs/captcha-types) for full descriptions of task parameters and endpoints.
+
 ---
 ## License
 This project is licensed under the MIT License. See [LICENSE.md](LICENSE.md) for details.
