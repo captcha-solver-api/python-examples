@@ -136,10 +136,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
     "task": {
         "type": "TurnstileTaskProxyless",
         "websiteURL": "https://example.com",
-        "websiteKey": "SITE_KEY",
-        "action": "login",
-        "data": "CUSTOM_CDATA",
-        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ..."
+        "websiteKey": "SITE_KEY"
     }
 })
 task_id = response.json().get("taskId")
@@ -156,11 +153,6 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
     }
 })
 task_id = response.json().get("taskId")
-result = requests.post("https://api.captcha-solver.com/getTaskResult", json={
-    "clientKey": "YOUR_API_KEY",
-    "taskId": task_id
-})
-print(result.json().get("solution", {}).get("token"))
 ```
 ### Image to Text
 Uses `ImageToTextTask`. Set `numeric`, `minLength`, `maxLength`, or `case` to improve accuracy. Add `comment` for worker instructions.

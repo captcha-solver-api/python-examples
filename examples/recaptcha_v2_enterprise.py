@@ -23,8 +23,7 @@ api_key = os.getenv("CAPTCHA_API_KEY", "YOUR_API_KEY")
 # If the site passes extra parameters to grecaptcha.enterprise.render(),
 # you must pass them as enterprisePayload or the token will be rejected.
 try:
-    # Step 1: Create a task to solve the reCAPTCHA v2 Enterprise captcha.
-    # The API returns a taskId that you use to poll for the result.
+    # Create a task to solve the reCAPTCHA v2 Enterprise captcha.
     response = requests.post("https://api.captcha-solver.com/createTask", json={
         "clientKey": api_key,
         "task": {
@@ -41,8 +40,7 @@ try:
     })
     task_id = response.json().get("taskId")
 
-    # Step 2: Poll for the result until the task is ready.
-    # The API processes the captcha asynchronously. Check the status periodically.
+    # Poll for the result until the task is ready.
     while True:
         result = requests.post("https://api.captcha-solver.com/getTaskResult", json={
             "clientKey": api_key,
@@ -61,8 +59,7 @@ except Exception as e:
 # Solves reCAPTCHA v2 Enterprise through your own proxy.
 # Use when the target site is geo-restricted or you need a consistent session.
 try:
-    # Step 1: Create a task with proxy parameters.
-    # Your proxy IP will be used to access the target site and solve the captcha.
+    # Create a task with proxy parameters.
     response = requests.post("https://api.captcha-solver.com/createTask", json={
         "clientKey": api_key,
         "task": {
@@ -84,7 +81,7 @@ try:
     })
     task_id = response.json().get("taskId")
 
-    # Step 2: Poll for the result until the task is ready.
+    # Poll for the result until the task is ready.
     while True:
         result = requests.post("https://api.captcha-solver.com/getTaskResult", json={
             "clientKey": api_key,

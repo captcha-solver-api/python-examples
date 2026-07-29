@@ -1,10 +1,10 @@
 """
-Example: Solve a reCAPTCHA v2 Enterprise challenge.
+Example: Solve a Yandex SmartCaptcha challenge (token-based).
 
 Prerequisites:
     Set the CAPTCHA_API_KEY environment variable.
     Replace websiteURL and websiteKey with values from your target page.
-    If the site uses enterprisePayload, extract and pass it or the token may be rejected.
+    This example uses the token-based method. For image-based solving, see the Coordinates example.
 """
 
 import os
@@ -18,23 +18,18 @@ import requests
 api_key = os.getenv("CAPTCHA_API_KEY", "YOUR_API_KEY")
 
 # --- Proxyless example ---
-# Solves reCAPTCHA v2 Enterprise without a proxy.
-# Enterprise captchas are loaded via the reCAPTCHA Enterprise API.
-# If the site passes extra parameters to grecaptcha.enterprise.render(),
-# you must pass them as enterprisePayload or the token will be rejected.
+# Solves Yandex SmartCaptcha without a proxy.
+# The service proxies are used to solve the captcha.
 try:
-    # Step 1: Create a task to solve the reCAPTCHA v2 Enterprise captcha.
-    # The API returns a taskId that you use to poll for the result.
+    # Step 1: Create a task to solve the Yandex SmartCaptcha.
+    # websiteKey is the sitekey value from the page code or captcha iframe.
     response = requests.post("https://api.captcha-solver.com/createTask", json={
         "clientKey": api_key,
         "task": {
-            "type": "RecaptchaV2EnterpriseTaskProxyless",
+            "type": "YandexSmartCaptchaTaskProxyless",
             "websiteURL": "https://example.com/login",                   # Full URL of the page with captcha
-            "websiteKey": "6Le-xxxxxxxxxxxxxxxxxxxxxxxxxxxx",            # data-sitekey attribute value
-            "isInvisible": False,                                        # Set True for invisible reCAPTCHA
-            # Optional fields (pass only if the target site requires them):
-            # "enterprisePayload": {"s": "value-from-page"},             # Extra params from grecaptcha.enterprise.render()
-            # "apiDomain": "recaptcha.net",                               # Set if site loads captcha from recaptcha.net
+            "websiteKey": "FEXfAbHQsToo97VidNVk3j4dC74nGW1DgdxK4OoR",   # sitekey from page code or iframe
+            # Optional fields:
             # "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...",  # Browser User-Agent
             # "cookies": "session=abc123; token=xyz789"                   # Session cookies if needed
         }
@@ -49,8 +44,8 @@ try:
             "taskId": task_id
         }).json()
         if result.get("status") == "ready":
-            # Solution contains {"gRecaptchaResponse": "03AGdBq..."}
-            # Pass this token to the g-recaptcha-response field or widget callback.
+            # Solution contains {"token": "dV9xNjYyNTU3NjkxO4k9OTQuNVMuMjkuMjM9..."}
+            # Use solution.token in the smart-token field or pass to your site's backend.
             print("result: " + str(result.get("solution")))
             break
         time.sleep(3)  # Wait 3 seconds before polling again.
@@ -58,28 +53,26 @@ except Exception as e:
     sys.exit(e)
 
 # --- With proxy example ---
-# Solves reCAPTCHA v2 Enterprise through your own proxy.
-# Use when the target site is geo-restricted or you need a consistent session.
+# Solves Yandex SmartCaptcha through your own proxy.
+# Note: this is the only captcha type where https proxy is accepted.
 try:
     # Step 1: Create a task with proxy parameters.
     # Your proxy IP will be used to access the target site and solve the captcha.
     response = requests.post("https://api.captcha-solver.com/createTask", json={
         "clientKey": api_key,
         "task": {
-            "type": "RecaptchaV2EnterpriseTask",
+            "type": "YandexSmartCaptchaTask",
             "websiteURL": "https://example.com/login",                   # Full URL of the page with captcha
-            "websiteKey": "6Le-xxxxxxxxxxxxxxxxxxxxxxxxxxxx",            # data-sitekey attribute value
+            "websiteKey": "FEXfAbHQsToo97VidNVk3j4dC74nGW1DgdxK4OoR",   # sitekey from page code or iframe
             # Proxy parameters:
-            "proxyType": "http",        # http, socks4, or socks5
+            "proxyType": "http",        # http, https, socks4, or socks5 (https is accepted only for this type)
             "proxyAddress": "1.2.3.4",  # Proxy IP address
             "proxyPort": 8080,          # Proxy port
             "proxyLogin": "user",       # Login for proxy authorization (optional)
             "proxyPassword": "password",# Password for proxy authorization (optional)
             # Optional fields:
-            "isInvisible": False,
-            # "enterprisePayload": {"s": "value-from-page"},             # Extra params from grecaptcha.enterprise.render()
-            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...",  # Browser User-Agent
-            "cookies": "foo=bar; baz=1"                                  # Session cookies if needed
+            # "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...",  # Browser User-Agent
+            # "cookies": "session=abc123; token=xyz789"                   # Session cookies if needed
         }
     })
     task_id = response.json().get("taskId")
@@ -91,7 +84,7 @@ try:
             "taskId": task_id
         }).json()
         if result.get("status") == "ready":
-            # Solution contains the same gRecaptchaResponse token.
+            # Solution contains the same token.
             print("result: " + str(result.get("solution")))
             break
         time.sleep(3)  # Wait 3 seconds before polling again.
