@@ -8,24 +8,17 @@ Prerequisites:
 
 import os
 import sys
+import requests
 
-from captcha_sdk import CaptchaClient
+api_key = os.getenv("CAPTCHA_API_KEY", "YOUR_API_KEY")
 
-# in this example we store the API key inside environment variables that can be set like:
-# export CAPTCHA_API_KEY=1abc234de56fab7c89012d34e56fa7b8 on Linux or macOS
-# set CAPTCHA_API_KEY=1abc234de56fab7c89012d34e56fa7b8 on Windows
-# you can just set the API key directly to its value like:
-# api_key="1abc234de56fab7c89012d34e56fa7b8"
-
-api_key = os.getenv('CAPTCHA_API_KEY', 'YOUR_API_KEY')
-
-# Create a solver instance with your API key.
-solver = CaptchaClient(api_key)
-
-# Get the current account balance.
-# Returns a float with the available amount in your account currency.
 try:
-    balance = solver.get_balance()
-    print('Balance: ' + str(balance))
+    response = requests.post("https://api.captcha-solver.com/getBalance", json={
+        "clientKey": api_key
+    })
+    data = response.json()
+    if data.get("errorId") != 0:
+        sys.exit(data.get("errorDescription", "Unknown error"))
+    print("Balance: " + str(data.get("balance")))
 except Exception as e:
     sys.exit(e)
