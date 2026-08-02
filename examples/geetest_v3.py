@@ -17,14 +17,20 @@ import requests
 # set CAPTCHA_API_KEY=1abc234de56fab7c89012d34e56fa7b8 on Windows.
 api_key = os.getenv("CAPTCHA_API_KEY", "YOUR_API_KEY")
 
+REQUEST_TIMEOUT = 30    # Seconds to wait for a single HTTP request.
+POLL_TIMEOUT = 180      # Seconds to wait for the task to be solved before giving up. GeeTest tasks may take longer.
+
 """
 Important: the value of the 'challenge' parameter is dynamic.
 For each request to the API you need to get a new value from the target page.
 Below is an example of fetching it from a demo endpoint.
 In production, extract this from the page's initGeetest call or network requests.
 """
-resp = requests.get("https://target-site.com/path/to/geetest/init")
-challenge = resp.json()["challenge"]
+try:
+    resp = requests.get("https://target-site.com/path/to/geetest/init", timeout=REQUEST_TIMEOUT)
+    challenge = resp.json()["challenge"]
+except Exception as e:
+    sys.exit(e)
 
 # --- Proxyless example ---
 # Solves GeeTest v3 without a proxy.
@@ -43,22 +49,29 @@ try:
             # "initParameters": {},                               # Extra params from initGeetest call
             # "userAgent": "Mozilla/5.0 ..."                      # Browser User-Agent
         }
-    })
-    task_id = response.json().get("taskId")
+    }, timeout=REQUEST_TIMEOUT).json()
+    if response.get("errorId"):
+        sys.exit(response.get("errorDescription", "Unknown error"))
+    task_id = response.get("taskId")
 
-    # Poll for the result until the task is ready.
+    # Poll for the result until the task is ready or the timeout is reached.
     # GeeTest tasks may take longer. Increase timeout if needed.
-    while True:
+    deadline = time.time() + POLL_TIMEOUT
+    while time.time() < deadline:
         result = requests.post("https://api.captcha-solver.com/getTaskResult", json={
             "clientKey": api_key,
             "taskId": task_id
-        }).json()
+        }, timeout=REQUEST_TIMEOUT).json()
+        if result.get("errorId"):
+            sys.exit(result.get("errorDescription", "Unknown error"))
         if result.get("status") == "ready":
             # Solution contains {"challenge": "...", "validate": "...", "seccode": "..."}
             # Pass solution.validate and solution.seccode to the page's GeeTest callback.
             print("result: " + str(result.get("solution")))
             break
         time.sleep(10)  # Wait 10 seconds before polling again.
+    else:
+        sys.exit("Timed out waiting for the captcha result.")
 except Exception as e:
     sys.exit(e)
 
@@ -80,19 +93,26 @@ try:
             "proxyLogin": "user",       # Login for proxy authorization (optional)
             "proxyPassword": "password" # Password for proxy authorization (optional)
         }
-    })
-    task_id = response.json().get("taskId")
+    }, timeout=REQUEST_TIMEOUT).json()
+    if response.get("errorId"):
+        sys.exit(response.get("errorDescription", "Unknown error"))
+    task_id = response.get("taskId")
 
-    # Poll for the result until the task is ready.
-    while True:
+    # Poll for the result until the task is ready or the timeout is reached.
+    deadline = time.time() + POLL_TIMEOUT
+    while time.time() < deadline:
         result = requests.post("https://api.captcha-solver.com/getTaskResult", json={
             "clientKey": api_key,
             "taskId": task_id
-        }).json()
+        }, timeout=REQUEST_TIMEOUT).json()
+        if result.get("errorId"):
+            sys.exit(result.get("errorDescription", "Unknown error"))
         if result.get("status") == "ready":
             # Solution contains {"challenge": "...", "validate": "...", "seccode": "..."}
             print("result: " + str(result.get("solution")))
             break
         time.sleep(10)  # Wait 10 seconds before polling again.
+    else:
+        sys.exit("Timed out waiting for the captcha result.")
 except Exception as e:
     sys.exit(e)

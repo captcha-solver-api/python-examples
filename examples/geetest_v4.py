@@ -17,6 +17,9 @@ import requests
 # set CAPTCHA_API_KEY=1abc234de56fab7c89012d34e56fa7b8 on Windows.
 api_key = os.getenv("CAPTCHA_API_KEY", "YOUR_API_KEY")
 
+REQUEST_TIMEOUT = 30    # Seconds to wait for a single HTTP request.
+POLL_TIMEOUT = 180      # Seconds to wait for the task to be solved before giving up. GeeTest v4 tasks may take longer.
+
 # --- Proxyless example ---
 # Solves GeeTest v4 without a proxy.
 # v4 drops gt/challenge. The widget is identified by captcha_id inside initParameters.
@@ -34,22 +37,29 @@ try:
             # Optional fields:
             # "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ..."  # Browser User-Agent
         }
-    })
-    task_id = response.json().get("taskId")
+    }, timeout=REQUEST_TIMEOUT).json()
+    if response.get("errorId"):
+        sys.exit(response.get("errorDescription", "Unknown error"))
+    task_id = response.get("taskId")
 
-    # Poll for the result until the task is ready.
+    # Poll for the result until the task is ready or the timeout is reached.
     # GeeTest v4 tasks may take longer. Increase timeout if needed.
-    while True:
+    deadline = time.time() + POLL_TIMEOUT
+    while time.time() < deadline:
         result = requests.post("https://api.captcha-solver.com/getTaskResult", json={
             "clientKey": api_key,
             "taskId": task_id
-        }).json()
+        }, timeout=REQUEST_TIMEOUT).json()
+        if result.get("errorId"):
+            sys.exit(result.get("errorDescription", "Unknown error"))
         if result.get("status") == "ready":
             # Solution contains {"captcha_id": "...", "lot_number": "...", "pass_token": "...", "gen_time": "...", "captcha_output": "..."}
             # Pass these values together into the page's GeeTest v4 callback as-is.
             print("result: " + str(result.get("solution")))
             break
         time.sleep(10)  # Wait 10 seconds before polling again.
+    else:
+        sys.exit("Timed out waiting for the captcha result.")
 except Exception as e:
     sys.exit(e)
 
@@ -73,19 +83,26 @@ try:
             "proxyLogin": "user",       # Login for proxy authorization (optional)
             "proxyPassword": "password" # Password for proxy authorization (optional)
         }
-    })
-    task_id = response.json().get("taskId")
+    }, timeout=REQUEST_TIMEOUT).json()
+    if response.get("errorId"):
+        sys.exit(response.get("errorDescription", "Unknown error"))
+    task_id = response.get("taskId")
 
-    # Poll for the result until the task is ready.
-    while True:
+    # Poll for the result until the task is ready or the timeout is reached.
+    deadline = time.time() + POLL_TIMEOUT
+    while time.time() < deadline:
         result = requests.post("https://api.captcha-solver.com/getTaskResult", json={
             "clientKey": api_key,
             "taskId": task_id
-        }).json()
+        }, timeout=REQUEST_TIMEOUT).json()
+        if result.get("errorId"):
+            sys.exit(result.get("errorDescription", "Unknown error"))
         if result.get("status") == "ready":
             # Solution contains {"captcha_id": "...", "lot_number": "...", "pass_token": "...", "gen_time": "...", "captcha_output": "..."}
             print("result: " + str(result.get("solution")))
             break
         time.sleep(10)  # Wait 10 seconds before polling again.
+    else:
+        sys.exit("Timed out waiting for the captcha result.")
 except Exception as e:
     sys.exit(e)

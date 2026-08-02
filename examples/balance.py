@@ -15,7 +15,7 @@ api_key = os.getenv("CAPTCHA_API_KEY", "YOUR_API_KEY")
 try:
     response = requests.post("https://api.captcha-solver.com/getBalance", json={
         "clientKey": api_key
-    })
+    }, timeout=30)
     data = response.json()
     if data.get("errorId") != 0:
         sys.exit(data.get("errorDescription", "Unknown error"))

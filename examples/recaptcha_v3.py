@@ -17,6 +17,9 @@ import requests
 # set CAPTCHA_API_KEY=1abc234de56fab7c89012d34e56fa7b8 on Windows.
 api_key = os.getenv("CAPTCHA_API_KEY", "YOUR_API_KEY")
 
+REQUEST_TIMEOUT = 30    # Seconds to wait for a single HTTP request.
+POLL_TIMEOUT = 180      # Seconds to wait for the task to be solved before giving up. v3 tasks take longer.
+
 # --- Proxyless example ---
 # Solves reCAPTCHA v3 without a proxy.
 # A proxy is not required for v3. Tasks are solved from the service IP addresses.
@@ -38,22 +41,29 @@ try:
             # "isEnterprise": False,                                     # Set True for reCAPTCHA v3 Enterprise
             # "apiDomain": "www.recaptcha.net"                           # Set if site loads from recaptcha.net
         }
-    })
-    task_id = response.json().get("taskId")
+    }, timeout=REQUEST_TIMEOUT).json()
+    if response.get("errorId"):
+        sys.exit(response.get("errorDescription", "Unknown error"))
+    task_id = response.get("taskId")
 
-    # Step 2: Poll for the result until the task is ready.
+    # Step 2: Poll for the result until the task is ready or the timeout is reached.
     # The API processes the captcha asynchronously. Check the status periodically.
     # Higher minScore values will take longer to solve.
-    while True:
+    deadline = time.time() + POLL_TIMEOUT
+    while time.time() < deadline:
         result = requests.post("https://api.captcha-solver.com/getTaskResult", json={
             "clientKey": api_key,
             "taskId": task_id
-        }).json()
+        }, timeout=REQUEST_TIMEOUT).json()
+        if result.get("errorId"):
+            sys.exit(result.get("errorDescription", "Unknown error"))
         if result.get("status") == "ready":
             # Solution contains {"gRecaptchaResponse": "03AGdBq..."}
             # Use this token just like a regular reCAPTCHA v3 token.
             print("result: " + str(result.get("solution")))
             break
         time.sleep(10)  # Wait 10 seconds before polling again. v3 tasks take longer.
+    else:
+        sys.exit("Timed out waiting for the captcha result.")
 except Exception as e:
     sys.exit(e)
