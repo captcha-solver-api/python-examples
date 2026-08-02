@@ -1,10 +1,9 @@
 """
-Example: Solve a reCAPTCHA v2 Enterprise challenge.
+Example: Solve a reCAPTCHA v2 challenge.
 
 Prerequisites:
     Set the CAPTCHA_API_KEY environment variable.
     Replace websiteURL and websiteKey with values from your target page.
-    If the site uses enterprisePayload, extract and pass it or the token may be rejected.
 """
 
 import os
@@ -18,23 +17,19 @@ import requests
 api_key = os.getenv("CAPTCHA_API_KEY", "YOUR_API_KEY")
 
 # --- Proxyless example ---
-# Solves reCAPTCHA v2 Enterprise without a proxy.
-# Enterprise captchas are loaded via the reCAPTCHA Enterprise API.
-# If the site passes extra parameters to grecaptcha.enterprise.render(),
-# you must pass them as enterprisePayload or the token will be rejected.
+# Solves reCAPTCHA v2 without a proxy.
 try:
-    # Step 1: Create a task to solve the reCAPTCHA v2 Enterprise captcha.
+    # Step 1: Create a task to solve the reCAPTCHA v2 captcha.
     # The API returns a taskId that you use to poll for the result.
     response = requests.post("https://api.captcha-solver.com/createTask", json={
         "clientKey": api_key,
         "task": {
-            "type": "RecaptchaV2EnterpriseTaskProxyless",
+            "type": "RecaptchaV2TaskProxyless",
             "websiteURL": "https://example.com/login",                   # Full URL of the page with captcha
             "websiteKey": "6Le-xxxxxxxxxxxxxxxxxxxxxxxxxxxx",            # data-sitekey attribute value
             "isInvisible": False,                                        # Set True for invisible reCAPTCHA
             # Optional fields (pass only if the target site requires them):
-            # "enterprisePayload": {"s": "value-from-page"},             # Extra params from grecaptcha.enterprise.render()
-            # "apiDomain": "recaptcha.net",                               # Set if site loads captcha from recaptcha.net
+            # "recaptchaDataSValue": "value-from-page",                  # Value of the data-s attribute (Google Search, YouTube)
             # "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...",  # Browser User-Agent
             # "cookies": "session=abc123; token=xyz789"                   # Session cookies if needed
         }
@@ -58,7 +53,7 @@ except Exception as e:
     sys.exit(e)
 
 # --- With proxy example ---
-# Solves reCAPTCHA v2 Enterprise through your own proxy.
+# Solves reCAPTCHA v2 through your own proxy.
 # Use when the target site is geo-restricted or you need a consistent session.
 try:
     # Step 1: Create a task with proxy parameters.
@@ -66,7 +61,7 @@ try:
     response = requests.post("https://api.captcha-solver.com/createTask", json={
         "clientKey": api_key,
         "task": {
-            "type": "RecaptchaV2EnterpriseTask",
+            "type": "RecaptchaV2Task",
             "websiteURL": "https://example.com/login",                   # Full URL of the page with captcha
             "websiteKey": "6Le-xxxxxxxxxxxxxxxxxxxxxxxxxxxx",            # data-sitekey attribute value
             # Proxy parameters:
@@ -77,7 +72,7 @@ try:
             "proxyPassword": "password",# Password for proxy authorization (optional)
             # Optional fields:
             "isInvisible": False,
-            # "enterprisePayload": {"s": "value-from-page"},             # Extra params from grecaptcha.enterprise.render()
+            # "recaptchaDataSValue": "value-from-page",                  # Value of the data-s attribute (Google Search, YouTube)
             "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...",  # Browser User-Agent
             "cookies": "foo=bar; baz=1"                                  # Session cookies if needed
         }
