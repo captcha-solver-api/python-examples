@@ -56,17 +56,24 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
         "websiteURL": "https://example.com/login",
         "websiteKey": "SITE_KEY"
     }
-})
-task_id = response.json().get("taskId")
-while True:
+}, timeout=30).json()
+if response.get("errorId"):
+    raise SystemExit(response.get("errorDescription"))
+task_id = response.get("taskId")
+deadline = time.time() + 120
+while time.time() < deadline:
     result = requests.post("https://api.captcha-solver.com/getTaskResult", json={
         "clientKey": API_KEY,
         "taskId": task_id
-    }).json()
+    }, timeout=30).json()
+    if result.get("errorId"):
+        raise SystemExit(result.get("errorDescription"))
     if result.get("status") == "ready":
         print(result.get("solution", {}).get("gRecaptchaResponse"))
         break
     time.sleep(3)
+else:
+    print("Timed out waiting for the captcha result.")
 ```
 ---
 ## Supported Types
@@ -96,7 +103,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
         "websiteKey": "SITE_KEY",
         "isInvisible": False
     }
-})
+}, timeout=30)
 task_id = response.json().get("taskId")
 ```
 ### reCAPTCHA v2 Enterprise
@@ -110,7 +117,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
         "websiteKey": "SITE_KEY",
         "enterprisePayload": {"s": "SITE_SPECIFIC_DATA"}
     }
-})
+}, timeout=30)
 task_id = response.json().get("taskId")
 ```
 ### reCAPTCHA v3
@@ -125,7 +132,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
         "minScore": 0.3,
         "pageAction": "login"
     }
-})
+}, timeout=30)
 task_id = response.json().get("taskId")
 ```
 ### Cloudflare Turnstile
@@ -138,7 +145,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
         "websiteURL": "https://example.com",
         "websiteKey": "SITE_KEY"
     }
-})
+}, timeout=30)
 task_id = response.json().get("taskId")
 ```
 ### Yandex SmartCaptcha
@@ -151,7 +158,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
         "websiteURL": "https://example.com",
         "websiteKey": "Y5Lh0ti..."
     }
-})
+}, timeout=30)
 task_id = response.json().get("taskId")
 ```
 ### Image to Text
@@ -169,7 +176,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
         "minLength": 4,
         "maxLength": 6
     }
-})
+}, timeout=30)
 task_id = response.json().get("taskId")
 ```
 ### Coordinates
@@ -185,7 +192,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
         "body": img_base64,
         "comment": "click on the green apple"
     }
-})
+}, timeout=30)
 task_id = response.json().get("taskId")
 ```
 ### GeeTest v3
@@ -199,7 +206,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
         "gt": "f2ae6cadcf7886856696c46d84d109d1",
         "challenge": "12345678abc90123d45678e90123f45g6"
     }
-})
+}, timeout=30)
 task_id = response.json().get("taskId")
 ```
 ### GeeTest v4
@@ -213,7 +220,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
         "version": 4,
         "initParameters": {"captcha_id": "e392e65f912c780f2c3ebac7702651de"}
     }
-})
+}, timeout=30)
 task_id = response.json().get("taskId")
 ```
 ### Tencent
@@ -226,14 +233,14 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
         "websiteURL": "https://example.com",
         "appId": "190014885"
     }
-})
+}, timeout=30)
 task_id = response.json().get("taskId")
 ```
 ### Check Balance
 ```python
 response = requests.post("https://api.captcha-solver.com/getBalance", json={
     "clientKey": "YOUR_API_KEY"
-})
+}, timeout=30)
 print(response.json().get("balance"))
 ```
 ### Custom Timeout and Polling
@@ -249,7 +256,10 @@ while True:
     result = requests.post("https://api.captcha-solver.com/getTaskResult", json={
         "clientKey": "YOUR_API_KEY",
         "taskId": task_id
-    }).json()
+    }, timeout=30).json()
+    if result.get("errorId"):
+        print(f"Error: {result.get('errorDescription')}")
+        break
     if result.get("status") == "ready":
         print(result.get("solution"))
         break
@@ -264,7 +274,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
         "websiteURL": "https://example.com",
         "websiteKey": "INVALID_KEY"
     }
-})
+}, timeout=30)
 data = response.json()
 if data.get("errorId") != 0:
     print(f"Error: {data.get('errorDescription')}")
