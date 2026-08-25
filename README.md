@@ -149,7 +149,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
 task_id = response.json().get("taskId")
 ```
 ### Yandex SmartCaptcha
-Token-based solving uses `YandexSmartCaptchaTaskProxyless` or `YandexSmartCaptchaTask`. Image-based solving uses `CoordinatesTask` with `imgType` set to `smart_captcha` or `pazl_smart_captcha`. See the Coordinates section for image examples. See the official docs for Yandex SmartCaptcha parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#yandex-smartcaptcha).
+Token-based solving uses `YandexSmartCaptchaTaskProxyless` or `YandexSmartCaptchaTask`. Image-based solving uses `CoordinatesTask` with `imgType` set to `smart_captcha`. See the Coordinates section for image examples. See the official docs for Yandex SmartCaptcha parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#yandex-smartcaptcha).
 ```python
 response = requests.post("https://api.captcha-solver.com/createTask", json={
     "clientKey": "YOUR_API_KEY",
@@ -180,7 +180,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
 task_id = response.json().get("taskId")
 ```
 ### Coordinates
-Uses `CoordinatesTask`. Works for click-based captchas and Yandex SmartCaptcha image challenges. Set `imgType` to `smart_captcha` or `pazl_smart_captcha` for Yandex. Always pass `imgInstructions` for `smart_captcha`. See the official docs for Coordinates parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#coordinates).
+Uses `CoordinatesTask`. Works for click-based captchas and Yandex SmartCaptcha image challenges. Set `imgType` to `smart_captcha` for Yandex. Always pass `imgInstructions` for `smart_captcha`. See the official docs for Coordinates parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#coordinates).
 ```python
 import base64
 with open("captcha.png", "rb") as f:
