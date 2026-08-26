@@ -93,7 +93,7 @@ else:
 ---
 ## Usage Examples
 ### reCAPTCHA v2
-Uses `RecaptchaV2TaskProxyless`. Add `isInvisible`, `userAgent`, or `cookies` if your target page requires them. Use `RecaptchaV2Task` for your own proxy. See the official docs for reCAPTCHA v2 parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#recaptcha-v2).
+Uses `RecaptchaV2TaskProxyless`. Add `isInvisible`, `apiDomain`, `userAgent`, or `cookies` if your target page requires them. Use `RecaptchaV2Task` for your own proxy. See the official docs for reCAPTCHA v2 parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#recaptcha-v2).
 ```python
 response = requests.post("https://api.captcha-solver.com/createTask", json={
     "clientKey": "YOUR_API_KEY",
@@ -136,7 +136,7 @@ response = requests.post("https://api.captcha-solver.com/createTask", json={
 task_id = response.json().get("taskId")
 ```
 ### Cloudflare Turnstile
-Uses `TurnstileTaskProxyless`. Pass `action`, `data` (cData), or `pageData` if the site uses them. Always pass `userAgent` for complex pages like Cloudflare Challenge. Use `TurnstileTask` for your own proxy. See the official docs for Cloudflare Turnstile parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#cloudflare-turnstile).
+Uses `TurnstileTaskProxyless`. Pass `action`, `data` (cData), or `pagedata` if the site uses them. The returned token is only valid together with the `userAgent` in the solution — use both, not the User-Agent your own bot sent the request with. Use `TurnstileTask` for your own proxy. See the official docs for Cloudflare Turnstile parameters and response format [here](https://captcha-solver.com/en/docs/captcha-types#cloudflare-turnstile).
 ```python
 response = requests.post("https://api.captcha-solver.com/createTask", json={
     "clientKey": "YOUR_API_KEY",

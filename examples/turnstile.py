@@ -4,8 +4,9 @@ Example: Solve a Cloudflare Turnstile challenge.
 Prerequisites:
     Set the CAPTCHA_API_KEY environment variable.
     Replace websiteURL and websiteKey with values from your target page.
-    Pass action, data, and pageData if the target site uses them.
-    Always pass userAgent for complex pages like Cloudflare Challenge.
+    Pass action, data, and pagedata if the target site uses them.
+    The token is only valid together with the userAgent returned in the solution —
+    use both, not the User-Agent your own bot sent the request with.
 """
 
 import os
@@ -23,10 +24,9 @@ POLL_TIMEOUT = 120      # Seconds to wait for the task to be solved before givin
 
 # --- Proxyless example ---
 # Solves Cloudflare Turnstile without a proxy.
-# The token is tied to the User-Agent, so pass the same one your browser or bot uses.
 try:
     # Step 1: Create a task to solve the Turnstile captcha.
-    # Pass action, data (cData), or pageData if the site uses them.
+    # Pass action, data (cData), or pagedata if the site uses them.
     # For Cloudflare Challenge pages, you need to intercept turnstile.render to get these values.
     response = requests.post("https://api.captcha-solver.com/createTask", json={
         "clientKey": api_key,
@@ -37,8 +37,7 @@ try:
             # Optional fields (pass only if the target site uses them):
             # "action": "login",                                         # Value of data-action attribute
             # "data": "custom-cdata-value",                              # Value of data-cdata attribute
-            # "pageData": "chl-page-data-value",                         # Value of chlPageData parameter
-            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ..." # User-Agent your browser or bot uses
+            # "pagedata": "chl-page-data-value"                          # Value of chlPageData parameter
         }
     }, timeout=REQUEST_TIMEOUT).json()
     if response.get("errorId"):
@@ -56,8 +55,10 @@ try:
         if result.get("errorId"):
             sys.exit(result.get("errorDescription", "Unknown error"))
         if result.get("status") == "ready":
-            # Solution contains {"token": "0.zxcv..."}
-            # Pass this token to the cf-turnstile-response field or widget callback.
+            # Solution contains {"token": "0.zxcv...", "userAgent": "Mozilla/5.0 ..."}
+            # The token is bound to the worker's browser: pass both solution.token
+            # (cf-turnstile-response field / widget callback) and solution.userAgent
+            # (the User-Agent your subsequent request to the target site must use).
             print("result: " + str(result.get("solution")))
             break
         time.sleep(3)  # Wait 3 seconds before polling again.
@@ -84,11 +85,10 @@ try:
             "proxyPort": 8080,          # Proxy port
             "proxyLogin": "user",       # Login for proxy authorization (optional)
             "proxyPassword": "password",# Password for proxy authorization (optional)
-            # Optional fields:
+            # Optional fields (pass only if the target site uses them):
             # "action": "login",                                         # Value of data-action attribute
             # "data": "custom-cdata-value",                              # Value of data-cdata attribute
-            # "pageData": "chl-page-data-value",                         # Value of chlPageData parameter
-            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ..." # User-Agent your browser or bot uses
+            # "pagedata": "chl-page-data-value"                          # Value of chlPageData parameter
         }
     }, timeout=REQUEST_TIMEOUT).json()
     if response.get("errorId"):
@@ -105,7 +105,7 @@ try:
         if result.get("errorId"):
             sys.exit(result.get("errorDescription", "Unknown error"))
         if result.get("status") == "ready":
-            # Solution contains the same token.
+            # Solution contains the same token + userAgent pair. Use both together.
             print("result: " + str(result.get("solution")))
             break
         time.sleep(3)  # Wait 3 seconds before polling again.

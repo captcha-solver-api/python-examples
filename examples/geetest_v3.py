@@ -47,7 +47,8 @@ try:
             # Optional fields:
             # "geetestApiServerSubdomain": "api-na.geetest.com", # Custom API subdomain
             # "initParameters": {},                               # Extra params from initGeetest call
-            # "userAgent": "Mozilla/5.0 ..."                      # Browser User-Agent
+            # "userAgent": "Mozilla/5.0 ...",                     # Browser User-Agent
+            # "risk_type": "slide"                                # Dynamic value from the captcha loading request, single-use
         }
     }, timeout=REQUEST_TIMEOUT).json()
     if response.get("errorId"):

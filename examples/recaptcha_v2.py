@@ -33,6 +33,7 @@ try:
             "isInvisible": False,                                        # Set True for invisible reCAPTCHA
             # Optional fields (pass only if the target site requires them):
             # "recaptchaDataSValue": "value-from-page",                  # Value of the data-s attribute (Google Search, YouTube)
+            # "apiDomain": "recaptcha.net",                               # Set if site loads captcha from recaptcha.net (default: google.com)
             # "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...",  # Browser User-Agent
             # "cookies": "session=abc123; token=xyz789"                   # Session cookies if needed
         }
@@ -83,6 +84,7 @@ try:
             # Optional fields:
             "isInvisible": False,
             # "recaptchaDataSValue": "value-from-page",                  # Value of the data-s attribute (Google Search, YouTube)
+            # "apiDomain": "recaptcha.net",                               # Set if site loads captcha from recaptcha.net (default: google.com)
             "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...",  # Browser User-Agent
             "cookies": "foo=bar; baz=1"                                  # Session cookies if needed
         }
