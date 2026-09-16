@@ -4,112 +4,74 @@ Example: Solve a Cloudflare Turnstile challenge.
 Prerequisites:
     Set the CAPTCHA_API_KEY environment variable.
     Replace websiteURL and websiteKey with values from your target page.
-    Pass action, data, and pagedata if the target site uses them.
-    The token is only valid together with the userAgent returned in the solution —
-    use both, not the User-Agent your own bot sent the request with.
+    For Cloudflare Challenge pages, also extract and pass action, data, and pagedata.
 """
 
 import os
 import sys
-import time
-import requests
 
-# Load API key from environment variable or set it directly here.
-# export CAPTCHA_API_KEY=1abc234de56fab7c89012d34e56fa7b8 on Linux or macOS.
-# set CAPTCHA_API_KEY=1abc234de56fab7c89012d34e56fa7b8 on Windows.
-api_key = os.getenv("CAPTCHA_API_KEY", "YOUR_API_KEY")
+try:
+    from dotenv import load_dotenv
+except ModuleNotFoundError as exc:
+    if exc.name != 'dotenv':
+        raise
+    load_dotenv = None
 
-REQUEST_TIMEOUT = 30    # Seconds to wait for a single HTTP request.
-POLL_TIMEOUT = 120      # Seconds to wait for the task to be solved before giving up.
+if load_dotenv is not None:
+    load_dotenv()
+
+from captcha_solver_api import CaptchaClient
+from captcha_solver_api.tasks import TurnstileTaskProxyless, TurnstileTask
+
+# in this example we store the API key inside environment variables that can be set like:
+# export CAPTCHA_API_KEY=1abc234de56fab7c89012d34e56fa7b8 on Linux or macOS
+# set CAPTCHA_API_KEY=1abc234de56fab7c89012d34e56fa7b8 on Windows
+# you can just set the API key directly to its value like:
+# api_key="1abc234de56fab7c89012d34e56fa7b8"
+
+api_key = os.getenv('CAPTCHA_API_KEY', 'YOUR_API_KEY')
+
+# Create a solver instance with your API key.
+solver = CaptchaClient(api_key)
 
 # --- Proxyless example ---
 # Solves Cloudflare Turnstile without a proxy.
+# The token is tied to the User-Agent. If you pass userAgent, use the same
+# User-Agent in your browser or bot when submitting the token.
 try:
-    # Step 1: Create a task to solve the Turnstile captcha.
-    # Pass action, data (cData), or pagedata if the site uses them.
-    # For Cloudflare Challenge pages, you need to intercept turnstile.render to get these values.
-    response = requests.post("https://api.captcha-solver.com/createTask", json={
-        "clientKey": api_key,
-        "task": {
-            "type": "TurnstileTaskProxyless",
-            "websiteURL": "https://example.com/login",                   # Full URL of the page with Turnstile
-            "websiteKey": "0x4AAAAAAAVrOwQWPlm3Bnr5",                    # data-sitekey attribute value
-            # Optional fields (pass only if the target site uses them):
-            # "action": "login",                                         # Value of data-action attribute
-            # "data": "custom-cdata-value",                              # Value of data-cdata attribute
-            # "pagedata": "chl-page-data-value"                          # Value of chlPageData parameter
-        }
-    }, timeout=REQUEST_TIMEOUT).json()
-    if response.get("errorId"):
-        sys.exit(response.get("errorDescription", "Unknown error"))
-    task_id = response.get("taskId")
-
-    # Step 2: Poll for the result until the task is ready or the timeout is reached.
-    # The API processes the captcha asynchronously. Check the status periodically.
-    deadline = time.time() + POLL_TIMEOUT
-    while time.time() < deadline:
-        result = requests.post("https://api.captcha-solver.com/getTaskResult", json={
-            "clientKey": api_key,
-            "taskId": task_id
-        }, timeout=REQUEST_TIMEOUT).json()
-        if result.get("errorId"):
-            sys.exit(result.get("errorDescription", "Unknown error"))
-        if result.get("status") == "ready":
-            # Solution contains {"token": "0.zxcv...", "userAgent": "Mozilla/5.0 ..."}
-            # The token is bound to the worker's browser: pass both solution.token
-            # (cf-turnstile-response field / widget callback) and solution.userAgent
-            # (the User-Agent your subsequent request to the target site must use).
-            print("result: " + str(result.get("solution")))
-            break
-        time.sleep(3)  # Wait 3 seconds before polling again.
-    else:
-        sys.exit("Timed out waiting for the captcha result.")
+    result = solver.solve(TurnstileTaskProxyless(
+        websiteURL='https://example.com/login',    # Full URL of the page with a Turnstile widget
+        websiteKey='YOUR_WEBSITE_KEY',               # data-sitekey attribute value
+        # Optional fields (pass only if the target site sets them)
+        # action='login',                           # Value of data-action attribute
+        # data='custom-cdata-value',                # Value of data-cdata attribute
+        # pagedata='chl-page-data-value',           # Value of chlPageData parameter
+        # userAgent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) ...',  # Must match the browser submitting the token
+    ))
+    # Solution contains {"token": "0.zxcv..."}
+    # Pass this token to the widget callback or cf-turnstile-response field.
+    print('result: ' + str(result))
 except Exception as e:
     sys.exit(e)
 
 # --- With proxy example ---
 # Solves Cloudflare Turnstile through your own proxy.
-# Use when the target site is geo-restricted or you need a consistent session.
 try:
-    # Step 1: Create a task with proxy parameters.
-    # Your proxy IP will be used to access the target site and solve the captcha.
-    response = requests.post("https://api.captcha-solver.com/createTask", json={
-        "clientKey": api_key,
-        "task": {
-            "type": "TurnstileTask",
-            "websiteURL": "https://example.com/login",                   # Full URL of the page with Turnstile
-            "websiteKey": "0x4AAAAAAAVrOwQWPlm3Bnr5",                    # data-sitekey attribute value
-            # Proxy parameters:
-            "proxyType": "http",        # http, socks4, or socks5
-            "proxyAddress": "1.2.3.4",  # Proxy IP address
-            "proxyPort": 8080,          # Proxy port
-            "proxyLogin": "user",       # Login for proxy authorization (optional)
-            "proxyPassword": "password",# Password for proxy authorization (optional)
-            # Optional fields (pass only if the target site uses them):
-            # "action": "login",                                         # Value of data-action attribute
-            # "data": "custom-cdata-value",                              # Value of data-cdata attribute
-            # "pagedata": "chl-page-data-value"                          # Value of chlPageData parameter
-        }
-    }, timeout=REQUEST_TIMEOUT).json()
-    if response.get("errorId"):
-        sys.exit(response.get("errorDescription", "Unknown error"))
-    task_id = response.get("taskId")
-
-    # Step 2: Poll for the result until the task is ready or the timeout is reached.
-    deadline = time.time() + POLL_TIMEOUT
-    while time.time() < deadline:
-        result = requests.post("https://api.captcha-solver.com/getTaskResult", json={
-            "clientKey": api_key,
-            "taskId": task_id
-        }, timeout=REQUEST_TIMEOUT).json()
-        if result.get("errorId"):
-            sys.exit(result.get("errorDescription", "Unknown error"))
-        if result.get("status") == "ready":
-            # Solution contains the same token + userAgent pair. Use both together.
-            print("result: " + str(result.get("solution")))
-            break
-        time.sleep(3)  # Wait 3 seconds before polling again.
-    else:
-        sys.exit("Timed out waiting for the captcha result.")
+    result = solver.solve(TurnstileTask(
+        websiteURL='https://example.com/login',    # Full URL of the page with Turnstile
+        websiteKey='YOUR_WEBSITE_KEY',               # data-sitekey attribute value
+        # --- Proxy parameters (replace with your own -- these are placeholders) ---
+        proxyType='http',           # http, socks4, or socks5
+        proxyAddress='1.2.3.4',     # Proxy IP address
+        proxyPort=8080,             # Proxy port
+        proxyLogin='user',          # Login for proxy authorization (optional)
+        proxyPassword='password',   # Password for proxy authorization (optional)
+        # --- Optional fields ---
+        # action='login',
+        # data='custom-cdata-value',
+        # pagedata='chl-page-data-value',
+        # userAgent='Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) ...',
+    ))
+    print('result: ' + str(result))
 except Exception as e:
     sys.exit(e)

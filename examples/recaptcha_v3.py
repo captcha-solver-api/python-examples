@@ -3,67 +3,54 @@ Example: Solve a reCAPTCHA v3 challenge.
 
 Prerequisites:
     Set the CAPTCHA_API_KEY environment variable.
-    Replace websiteURL, websiteKey, minScore, and pageAction with values from your target page.
-    reCAPTCHA v3 does not require a proxy. It is solved from the service IP addresses.
+    Replace websiteURL, websiteKey, and minScore with values from your target
+    page, and pass pageAction if the site uses it -- this increases the
+    chance of the token being accepted.
 """
 
 import os
 import sys
-import time
-import requests
 
-# Load API key from environment variable or set it directly here.
-# export CAPTCHA_API_KEY=1abc234de56fab7c89012d34e56fa7b8 on Linux or macOS.
-# set CAPTCHA_API_KEY=1abc234de56fab7c89012d34e56fa7b8 on Windows.
-api_key = os.getenv("CAPTCHA_API_KEY", "YOUR_API_KEY")
-
-REQUEST_TIMEOUT = 30    # Seconds to wait for a single HTTP request.
-POLL_TIMEOUT = 180      # Seconds to wait for the task to be solved before giving up. v3 tasks take longer.
-
-# --- Proxyless example ---
-# Solves reCAPTCHA v3 without a proxy.
-# A proxy is not required for v3. Tasks are solved from the service IP addresses.
-# The higher the minScore, the harder and longer the task takes to solve.
 try:
-    # Step 1: Create a task to solve the reCAPTCHA v3 captcha.
-    # pageAction is the value of the action parameter the site sets when calling grecaptcha.execute().
-    # Passing it increases the chance of the site accepting the token.
-    # Set isEnterprise to True if the site uses reCAPTCHA v3 Enterprise.
-    response = requests.post("https://api.captcha-solver.com/createTask", json={
-        "clientKey": api_key,
-        "task": {
-            "type": "RecaptchaV3TaskProxyless",
-            "websiteURL": "https://example.com/login",                   # Full URL of the page with captcha
-            "websiteKey": "6Le-xxxxxxxxxxxxxxxxxxxxxxxxxxxx",            # Site key of the reCAPTCHA v3 widget
-            "minScore": 0.7,                                             # Minimum acceptable token score (0.1 to 0.9)
-            "pageAction": "verify",                                      # Action value from grecaptcha.execute() call
-            # Optional fields:
-            # "isEnterprise": False,                                     # Set True for reCAPTCHA v3 Enterprise
-            # "apiDomain": "www.recaptcha.net"                           # Set if site loads from recaptcha.net
-        }
-    }, timeout=REQUEST_TIMEOUT).json()
-    if response.get("errorId"):
-        sys.exit(response.get("errorDescription", "Unknown error"))
-    task_id = response.get("taskId")
+    from dotenv import load_dotenv
+except ModuleNotFoundError as exc:
+    if exc.name != 'dotenv':
+        raise
+    load_dotenv = None
 
-    # Step 2: Poll for the result until the task is ready or the timeout is reached.
-    # The API processes the captcha asynchronously. Check the status periodically.
-    # Higher minScore values will take longer to solve.
-    deadline = time.time() + POLL_TIMEOUT
-    while time.time() < deadline:
-        result = requests.post("https://api.captcha-solver.com/getTaskResult", json={
-            "clientKey": api_key,
-            "taskId": task_id
-        }, timeout=REQUEST_TIMEOUT).json()
-        if result.get("errorId"):
-            sys.exit(result.get("errorDescription", "Unknown error"))
-        if result.get("status") == "ready":
-            # Solution contains {"gRecaptchaResponse": "03AGdBq..."}
-            # Use this token just like a regular reCAPTCHA v3 token.
-            print("result: " + str(result.get("solution")))
-            break
-        time.sleep(10)  # Wait 10 seconds before polling again. v3 tasks take longer.
-    else:
-        sys.exit("Timed out waiting for the captcha result.")
+if load_dotenv is not None:
+    load_dotenv()
+
+from captcha_solver_api import CaptchaClient
+from captcha_solver_api.tasks import RecaptchaV3TaskProxyless
+
+# in this example we store the API key inside environment variables that can be set like:
+# export CAPTCHA_API_KEY=1abc234de56fab7c89012d34e56fa7b8 on Linux or macOS
+# set CAPTCHA_API_KEY=1abc234de56fab7c89012d34e56fa7b8 on Windows
+# you can just set the API key directly to its value like:
+# api_key="1abc234de56fab7c89012d34e56fa7b8"
+
+api_key = os.getenv('CAPTCHA_API_KEY', 'YOUR_API_KEY')
+
+# Create a solver instance with your API key.
+# reCAPTCHA v3 tasks may take longer to solve. Increase timeout if needed.
+solver = CaptchaClient(api_key, timeout=180)
+
+# reCAPTCHA v3 returns a score instead of a pass/fail challenge.
+# The higher the minScore you request, the harder and longer the task takes.
+# minScore values: 0.3 (fastest), 0.7 (balanced), 0.9 (highest, slowest).
+try:
+    result = solver.solve(RecaptchaV3TaskProxyless(
+        websiteURL='https://example.com/login',      # Full URL of the page with the v3 widget
+        websiteKey='YOUR_WEBSITE_KEY',                # Site key of the v3 widget on that page
+        minScore=0.3,                               # Minimum acceptable score (0.3, 0.7, or 0.9)
+        # Optional fields (pass if the site uses them, increases token acceptance)
+        pageAction='homepage',                       # Action set by that page in grecaptcha.execute()
+        # isEnterprise=True,                        # Set True for reCAPTCHA v3 Enterprise
+        # apiDomain='www.recaptcha.net',            # Set if site loads from recaptcha.net
+    ))
+    # Solution contains {"gRecaptchaResponse": "03AGdBq..."}
+    # Pass this token to the g-recaptcha-response field or grecaptcha callback.
+    print('result: ' + str(result))
 except Exception as e:
     sys.exit(e)

@@ -3,111 +3,80 @@ Example: Solve a click-based image captcha using CoordinatesTask.
 
 Prerequisites:
     Set the CAPTCHA_API_KEY environment variable.
-    Provide the captcha image as base64 in the body parameter.
+    Ready to run as-is: sample captcha images are bundled in assets/.
     Use comment to tell the worker what to click on the image.
     No proxy is required. The image is submitted directly to the service.
 """
 
 import os
 import sys
-import time
-import requests
 from base64 import b64encode
 
-# Load API key from environment variable or set it directly here.
-# export CAPTCHA_API_KEY=1abc234de56fab7c89012d34e56fa7b8 on Linux or macOS.
-# set CAPTCHA_API_KEY=1abc234de56fab7c89012d34e56fa7b8 on Windows.
-api_key = os.getenv("CAPTCHA_API_KEY", "YOUR_API_KEY")
+try:
+    from dotenv import load_dotenv
+except ModuleNotFoundError as exc:
+    if exc.name != 'dotenv':
+        raise
+    load_dotenv = None
 
-REQUEST_TIMEOUT = 30    # Seconds to wait for a single HTTP request.
-POLL_TIMEOUT = 60       # Seconds to wait for the task to be solved before giving up.
+if load_dotenv is not None:
+    load_dotenv()
+assets_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))), 'assets')
+
+from captcha_solver_api import CaptchaClient
+from captcha_solver_api.tasks import CoordinatesTask
+
+# in this example we store the API key inside environment variables that can be set like:
+# export CAPTCHA_API_KEY=1abc234de56fab7c89012d34e56fa7b8 on Linux or macOS
+# set CAPTCHA_API_KEY=1abc234de56fab7c89012d34e56fa7b8 on Windows
+# you can just set the API key directly to its value like:
+# api_key="1abc234de56fab7c89012d34e56fa7b8"
+
+api_key = os.getenv('CAPTCHA_API_KEY', 'YOUR_API_KEY')
+
+# Create a solver instance with your API key.
+solver = CaptchaClient(api_key)
 
 # --- Basic example ---
-# Solves a simple click-based captcha with a hint for the worker.
+# Solves a simple click-based captcha (assets/fruit-click.png) with
+# a hint for the worker. The worker will click on the specified points on the image.
 try:
     # Read and encode the captcha image to base64.
     # The body must be a pure base64 string without the data:image/...;base64, prefix.
-    with open("./captcha.png", "rb") as f:
-        body = b64encode(f.read()).decode("utf-8")
+    with open(os.path.join(assets_dir, 'fruit-click.png'), 'rb') as f:
+        body = b64encode(f.read()).decode('utf-8')
 
-    # Step 1: Create a task to solve the click-based captcha.
-    # The worker will click on the specified points on the image.
-    response = requests.post("https://api.captcha-solver.com/createTask", json={
-        "clientKey": api_key,
-        "task": {
-            "type": "CoordinatesTask",
-            "body": body,                                # Base64-encoded captcha image (required)
-            "comment": "click on the green apple"        # Text hint for the worker
-        }
-    }, timeout=REQUEST_TIMEOUT).json()
-    if response.get("errorId"):
-        sys.exit(response.get("errorDescription", "Unknown error"))
-    task_id = response.get("taskId")
-
-    # Step 2: Poll for the result until the task is ready or the timeout is reached.
-    # The API processes the captcha asynchronously. Check the status periodically.
-    deadline = time.time() + POLL_TIMEOUT
-    while time.time() < deadline:
-        result = requests.post("https://api.captcha-solver.com/getTaskResult", json={
-            "clientKey": api_key,
-            "taskId": task_id
-        }, timeout=REQUEST_TIMEOUT).json()
-        if result.get("errorId"):
-            sys.exit(result.get("errorDescription", "Unknown error"))
-        if result.get("status") == "ready":
-            # Solution contains {"coordinates": [{"x": 358, "y": 268}]}
-            # Click on each coordinate in order. Coordinates are pixel positions.
-            print("result: " + str(result.get("solution")))
-            break
-        time.sleep(3)  # Wait 3 seconds before polling again.
-    else:
-        sys.exit("Timed out waiting for the captcha result.")
+    result = solver.solve(CoordinatesTask(
+        body=body,                                # Base64-encoded captcha image (required)
+        comment='click on the green apple',       # Text hint for the worker
+    ))
+    # Solution contains {"coordinates": [{"x": 140, "y": 110}]}
+    # Click on each coordinate in order. Coordinates are pixel positions.
+    print('result: ' + str(result))
 except Exception as e:
     sys.exit(e)
 
 # --- Advanced example ---
-# Solves a captcha with instruction image and click count limits.
+# Solves a captcha (assets/traffic-lights.png) with instruction image
+# and click count limits.
 try:
-    # Read and encode the captcha image to base64.
-    with open("./captcha.png", "rb") as f:
-        body = b64encode(f.read()).decode("utf-8")
+    with open(os.path.join(assets_dir, 'traffic-lights.png'), 'rb') as f:
+        body = b64encode(f.read()).decode('utf-8')
 
     # Read and encode an optional instruction image.
     # This image helps the worker understand what to click.
-    with open("./instruction.png", "rb") as f:
-        img_instructions = b64encode(f.read()).decode("utf-8")
+    with open(os.path.join(assets_dir, 'traffic-lights-instructions.png'), 'rb') as f:
+        img_instructions = b64encode(f.read()).decode('utf-8')
 
-    # Step 1: Create a task with more options.
-    response = requests.post("https://api.captcha-solver.com/createTask", json={
-        "clientKey": api_key,
-        "task": {
-            "type": "CoordinatesTask",
-            "body": body,                                # Base64-encoded captcha image
-            "comment": "click on all traffic lights",    # Text hint for the worker
-            "imgInstructions": img_instructions,         # Optional instruction image
-            "minClicks": 1,                              # Minimum number of clicks (default 1)
-            "maxClicks": 3                               # Maximum number of clicks allowed
-        }
-    }, timeout=REQUEST_TIMEOUT).json()
-    if response.get("errorId"):
-        sys.exit(response.get("errorDescription", "Unknown error"))
-    task_id = response.get("taskId")
-
-    # Step 2: Poll for the result until the task is ready or the timeout is reached.
-    deadline = time.time() + POLL_TIMEOUT
-    while time.time() < deadline:
-        result = requests.post("https://api.captcha-solver.com/getTaskResult", json={
-            "clientKey": api_key,
-            "taskId": task_id
-        }, timeout=REQUEST_TIMEOUT).json()
-        if result.get("errorId"):
-            sys.exit(result.get("errorDescription", "Unknown error"))
-        if result.get("status") == "ready":
-            # Solution contains coordinates for all requested clicks.
-            print("result: " + str(result.get("solution")))
-            break
-        time.sleep(3)  # Wait 3 seconds before polling again.
-    else:
-        sys.exit("Timed out waiting for the captcha result.")
+    result = solver.solve(CoordinatesTask(
+        body=body,                                # Base64-encoded captcha image
+        comment='click on all traffic lights',    # Text hint for the worker
+        imgInstructions=img_instructions,         # Optional instruction image
+        minClicks=1,                              # Minimum number of clicks (default 1)
+        maxClicks=3,                              # Maximum number of clicks allowed
+    ))
+    # Solution contains coordinates for all requested clicks, e.g.
+    # {"coordinates": [{"x": 110, "y": 150}, {"x": 430, "y": 130}]}
+    print('result: ' + str(result))
 except Exception as e:
     sys.exit(e)

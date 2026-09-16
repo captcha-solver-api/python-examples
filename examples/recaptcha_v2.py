@@ -8,106 +8,65 @@ Prerequisites:
 
 import os
 import sys
-import time
-import requests
 
-# Load API key from environment variable or set it directly here.
-# export CAPTCHA_API_KEY=1abc234de56fab7c89012d34e56fa7b8 on Linux or macOS.
-# set CAPTCHA_API_KEY=1abc234de56fab7c89012d34e56fa7b8 on Windows.
-api_key = os.getenv("CAPTCHA_API_KEY", "YOUR_API_KEY")
+try:
+    from dotenv import load_dotenv
+except ModuleNotFoundError as exc:
+    if exc.name != 'dotenv':
+        raise
+    load_dotenv = None
 
-REQUEST_TIMEOUT = 30    # Seconds to wait for a single HTTP request.
-POLL_TIMEOUT = 120      # Seconds to wait for the task to be solved before giving up.
+if load_dotenv is not None:
+    load_dotenv()
+
+from captcha_solver_api import CaptchaClient
+from captcha_solver_api.tasks import RecaptchaV2TaskProxyless, RecaptchaV2Task
+
+# in this example we store the API key inside environment variables that can be set like:
+# export CAPTCHA_API_KEY=1abc234de56fab7c89012d34e56fa7b8 on Linux or macOS
+# set CAPTCHA_API_KEY=1abc234de56fab7c89012d34e56fa7b8 on Windows
+# you can just set the API key directly to its value like:
+# api_key="1abc234de56fab7c89012d34e56fa7b8"
+
+api_key = os.getenv('CAPTCHA_API_KEY', 'YOUR_API_KEY')
+
+# Create a solver instance with your API key.
+# Optional: timeout (max seconds to wait for solution, default 120)
+# Optional: polling_interval (seconds before and between status checks, default 10)
+solver = CaptchaClient(api_key)
 
 # --- Proxyless example ---
 # Solves reCAPTCHA v2 without a proxy.
+# The service uses its own IP addresses.
 try:
-    # Step 1: Create a task to solve the reCAPTCHA v2 captcha.
-    # The API returns a taskId that you use to poll for the result.
-    response = requests.post("https://api.captcha-solver.com/createTask", json={
-        "clientKey": api_key,
-        "task": {
-            "type": "RecaptchaV2TaskProxyless",
-            "websiteURL": "https://example.com/login",                   # Full URL of the page with captcha
-            "websiteKey": "6Le-xxxxxxxxxxxxxxxxxxxxxxxxxxxx",            # data-sitekey attribute value
-            "isInvisible": False,                                        # Set True for invisible reCAPTCHA
-            # Optional fields (pass only if the target site requires them):
-            # "recaptchaDataSValue": "value-from-page",                  # Value of the data-s attribute (Google Search, YouTube)
-            # "apiDomain": "recaptcha.net",                               # Set if site loads captcha from recaptcha.net (default: google.com)
-            # "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...",  # Browser User-Agent
-            # "cookies": "session=abc123; token=xyz789"                   # Session cookies if needed
-        }
-    }, timeout=REQUEST_TIMEOUT).json()
-    if response.get("errorId"):
-        sys.exit(response.get("errorDescription", "Unknown error"))
-    task_id = response.get("taskId")
-
-    # Step 2: Poll for the result until the task is ready or the timeout is reached.
-    # The API processes the captcha asynchronously. Check the status periodically.
-    deadline = time.time() + POLL_TIMEOUT
-    while time.time() < deadline:
-        result = requests.post("https://api.captcha-solver.com/getTaskResult", json={
-            "clientKey": api_key,
-            "taskId": task_id
-        }, timeout=REQUEST_TIMEOUT).json()
-        if result.get("errorId"):
-            sys.exit(result.get("errorDescription", "Unknown error"))
-        if result.get("status") == "ready":
-            # Solution contains {"gRecaptchaResponse": "03AGdBq..."}
-            # Pass this token to the g-recaptcha-response field or widget callback.
-            print("result: " + str(result.get("solution")))
-            break
-        time.sleep(3)  # Wait 3 seconds before polling again.
-    else:
-        sys.exit("Timed out waiting for the captcha result.")
+    # Create a task and wait for the solution.
+    # solve() handles task creation, polling, and returns the solution dict.
+    result = solver.solve(RecaptchaV2TaskProxyless(
+        websiteURL='https://example.com/login',      # Full URL of the page with the captcha
+        websiteKey='YOUR_WEBSITE_KEY',                # data-sitekey attribute value on that page
+        isInvisible=False,                          # Set True for invisible reCAPTCHA
+    ))
+    # Solution contains {"gRecaptchaResponse": "03AGdBq..."}
+    # Pass this token to the g-recaptcha-response field or widget callback.
+    print('result: ' + str(result))
 except Exception as e:
     sys.exit(e)
 
 # --- With proxy example ---
 # Solves reCAPTCHA v2 through your own proxy.
-# Use when the target site is geo-restricted or you need a consistent session.
+# Required when the target site is geo-restricted or you need session consistency.
 try:
-    # Step 1: Create a task with proxy parameters.
-    # Your proxy IP will be used to access the target site and solve the captcha.
-    response = requests.post("https://api.captcha-solver.com/createTask", json={
-        "clientKey": api_key,
-        "task": {
-            "type": "RecaptchaV2Task",
-            "websiteURL": "https://example.com/login",                   # Full URL of the page with captcha
-            "websiteKey": "6Le-xxxxxxxxxxxxxxxxxxxxxxxxxxxx",            # data-sitekey attribute value
-            # Proxy parameters:
-            "proxyType": "http",        # http, socks4, or socks5
-            "proxyAddress": "1.2.3.4",  # Proxy IP address
-            "proxyPort": 8080,          # Proxy port
-            "proxyLogin": "user",       # Login for proxy authorization (optional)
-            "proxyPassword": "password",# Password for proxy authorization (optional)
-            # Optional fields:
-            "isInvisible": False,
-            # "recaptchaDataSValue": "value-from-page",                  # Value of the data-s attribute (Google Search, YouTube)
-            # "apiDomain": "recaptcha.net",                               # Set if site loads captcha from recaptcha.net (default: google.com)
-            "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) ...",  # Browser User-Agent
-            "cookies": "foo=bar; baz=1"                                  # Session cookies if needed
-        }
-    }, timeout=REQUEST_TIMEOUT).json()
-    if response.get("errorId"):
-        sys.exit(response.get("errorDescription", "Unknown error"))
-    task_id = response.get("taskId")
-
-    # Step 2: Poll for the result until the task is ready or the timeout is reached.
-    deadline = time.time() + POLL_TIMEOUT
-    while time.time() < deadline:
-        result = requests.post("https://api.captcha-solver.com/getTaskResult", json={
-            "clientKey": api_key,
-            "taskId": task_id
-        }, timeout=REQUEST_TIMEOUT).json()
-        if result.get("errorId"):
-            sys.exit(result.get("errorDescription", "Unknown error"))
-        if result.get("status") == "ready":
-            # Solution contains the same gRecaptchaResponse token.
-            print("result: " + str(result.get("solution")))
-            break
-        time.sleep(3)  # Wait 3 seconds before polling again.
-    else:
-        sys.exit("Timed out waiting for the captcha result.")
+    result = solver.solve(RecaptchaV2Task(
+        websiteURL='https://example.com/login',      # Full URL of the page with captcha
+        websiteKey='YOUR_WEBSITE_KEY',                # data-sitekey attribute value
+        # --- Proxy parameters (replace with your own -- these are placeholders) ---
+        proxyType='http',           # http, socks4, or socks5
+        proxyAddress='1.2.3.4',     # Proxy IP address
+        proxyPort=8080,             # Proxy port
+        proxyLogin='user',          # Login for proxy authorization (optional)
+        proxyPassword='password',   # Password for proxy authorization (optional)
+    ))
+    # Solution contains the same gRecaptchaResponse token.
+    print('result: ' + str(result))
 except Exception as e:
     sys.exit(e)
