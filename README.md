@@ -80,6 +80,7 @@ API documentation: https://captcha-solver.com/en/docs/captcha-types
 
 - [Python SDK](https://github.com/captcha-solver-api/python-sdk)
 - [JavaScript SDK](https://github.com/captcha-solver-api/javascript-sdk)
+- [Selenium Python examples](https://github.com/captcha-solver-api/captcha-solver-selenium-python-examples)
 - [JavaScript examples](https://github.com/captcha-solver-api/javascript-examples)
 - [Cloudflare Turnstile Puppeteer Demo](https://github.com/captcha-solver-api/cloudflare-turnstile-puppeteer-demo)
 - [Tencent CAPTCHA automation examples](https://github.com/captcha-solver-api/How-to-Automate-Tencent-CAPTCHA)
