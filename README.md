@@ -76,6 +76,14 @@ Each example creates a task class from `captcha_solver_api.tasks` and calls `Cap
 
 API documentation: https://captcha-solver.com/en/docs/captcha-types
 
+## Useful Links
+
+- [Python SDK](https://github.com/captcha-solver-api/python-sdk)
+- [JavaScript SDK](https://github.com/captcha-solver-api/javascript-sdk)
+- [JavaScript examples](https://github.com/captcha-solver-api/javascript-examples)
+- [Cloudflare Turnstile Puppeteer Demo](https://github.com/captcha-solver-api/cloudflare-turnstile-puppeteer-demo)
+- [Tencent CAPTCHA automation examples](https://github.com/captcha-solver-api/How-to-Automate-Tencent-CAPTCHA)
+
 ## License
 
 MIT. See [LICENSE.md](LICENSE.md).
